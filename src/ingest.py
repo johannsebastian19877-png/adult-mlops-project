@@ -42,29 +42,34 @@ def ingest_adult(output_dir: str = 'data/raw') -> Dict[str, Any]:
     out_path = _resolve_output_path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
-    # Try parquet first
+    # Try parquet first, but also write CSV for portability
     written = []
+    parquet_ok = False
     try:
         features.to_parquet(out_path / 'features.parquet', engine='pyarrow')
         targets.to_parquet(out_path / 'targets.parquet', engine='pyarrow')
         written.extend(['features.parquet', 'targets.parquet'])
+        parquet_ok = True
         log.info('Wrote parquet files to %s', out_path)
     except Exception as e:
-        log.warning('Parquet write failed (%s). Falling back to CSV.', e)
-        # Fallback to CSV
-        try:
-            features.to_csv(out_path / 'features.csv', index=False)
-            targets.to_csv(out_path / 'targets.csv', index=False)
-            written.extend(['features.csv', 'targets.csv'])
-            log.info('Wrote CSV files to %s', out_path)
-        except Exception as e2:
-            log.error('Failed to write fallback CSV: %s', e2)
+        log.warning('Parquet write failed (%s). Will attempt CSV only.', e)
+
+    # Always attempt CSV as well (either fallback or alongside parquet)
+    try:
+        features.to_csv(out_path / 'features.csv', index=False)
+        targets.to_csv(out_path / 'targets.csv', index=False)
+        written.extend(['features.csv', 'targets.csv'])
+        log.info('Wrote CSV files to %s', out_path)
+    except Exception as e2:
+        log.error('Failed to write CSV: %s', e2)
+        if not parquet_ok:
+            # Only raise if neither format could be written
             raise
 
     return {
         'n_rows': int(len(features)),
         'n_features': int(features.shape[1]) if hasattr(features, 'shape') else None,
-        'target_dist': targets.value_counts().to_dict() if hasattr(targets, 'value_counts') else None,
+        'target_dist': {str(k): v for k, v in (targets.value_counts().to_dict().items() if hasattr(targets, 'value_counts') else [])},
         'written_files': written,
         'output_dir': str(out_path)
     }
