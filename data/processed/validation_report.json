@@ -1,0 +1,180 @@
+{
+  "success": true,
+  "schema_issues": null,
+  "null_counts": {
+    "age": 0,
+    "workclass": 963,
+    "fnlwgt": 0,
+    "education": 0,
+    "education-num": 0,
+    "marital-status": 0,
+    "occupation": 966,
+    "relationship": 0,
+    "race": 0,
+    "sex": 0,
+    "capital-gain": 0,
+    "capital-loss": 0,
+    "hours-per-week": 0,
+    "native-country": 274
+  },
+  "dtypes": {
+    "age": "int64",
+    "workclass": "object",
+    "fnlwgt": "int64",
+    "education": "object",
+    "education-num": "int64",
+    "marital-status": "object",
+    "occupation": "object",
+    "relationship": "object",
+    "race": "object",
+    "sex": "object",
+    "capital-gain": "int64",
+    "capital-loss": "int64",
+    "hours-per-week": "int64",
+    "native-country": "object"
+  },
+  "duplicates": {
+    "count": 53,
+    "has_duplicates": true
+  },
+  "numeric_summary": {
+    "age": {
+      "count": 48842,
+      "mean": 38.64358543876172,
+      "std": 13.710509934443555,
+      "min": 17.0,
+      "25%": 28.0,
+      "50%": 37.0,
+      "75%": 48.0,
+      "max": 90.0
+    },
+    "fnlwgt": {
+      "count": 48842,
+      "mean": 189664.13459727284,
+      "std": 105604.02542315728,
+      "min": 12285.0,
+      "25%": 117550.5,
+      "50%": 178144.5,
+      "75%": 237642.0,
+      "max": 1490400.0
+    },
+    "education-num": {
+      "count": 48842,
+      "mean": 10.078088530363212,
+      "std": 2.5709727555922566,
+      "min": 1.0,
+      "25%": 9.0,
+      "50%": 10.0,
+      "75%": 12.0,
+      "max": 16.0
+    },
+    "capital-gain": {
+      "count": 48842,
+      "mean": 1079.0676262233324,
+      "std": 7452.019057655394,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 99999.0
+    },
+    "capital-loss": {
+      "count": 48842,
+      "mean": 87.50231358257237,
+      "std": 403.00455212435907,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 4356.0
+    },
+    "hours-per-week": {
+      "count": 48842,
+      "mean": 40.422382375824085,
+      "std": 12.391444024252307,
+      "min": 1.0,
+      "25%": 40.0,
+      "50%": 40.0,
+      "75%": 45.0,
+      "max": 99.0
+    }
+  },
+  "categorical_distribution": {
+    "workclass": {
+      "Private": 33906,
+      "Self-emp-not-inc": 3862,
+      "Local-gov": 3136,
+      "State-gov": 1981,
+      "?": 1836,
+      "Self-emp-inc": 1695,
+      "Federal-gov": 1432,
+      "nan": 963,
+      "Without-pay": 21,
+      "Never-worked": 10
+    },
+    "education": {
+      "HS-grad": 15784,
+      "Some-college": 10878,
+      "Bachelors": 8025,
+      "Masters": 2657,
+      "Assoc-voc": 2061,
+      "11th": 1812,
+      "Assoc-acdm": 1601,
+      "10th": 1389,
+      "7th-8th": 955,
+      "Prof-school": 834
+    },
+    "marital-status": {
+      "Married-civ-spouse": 22379,
+      "Never-married": 16117,
+      "Divorced": 6633,
+      "Separated": 1530,
+      "Widowed": 1518,
+      "Married-spouse-absent": 628,
+      "Married-AF-spouse": 37
+    },
+    "occupation": {
+      "Prof-specialty": 6172,
+      "Craft-repair": 6112,
+      "Exec-managerial": 6086,
+      "Adm-clerical": 5611,
+      "Sales": 5504,
+      "Other-service": 4923,
+      "Machine-op-inspct": 3022,
+      "Transport-moving": 2355,
+      "Handlers-cleaners": 2072,
+      "?": 1843
+    },
+    "relationship": {
+      "Husband": 19716,
+      "Not-in-family": 12583,
+      "Own-child": 7581,
+      "Unmarried": 5125,
+      "Wife": 2331,
+      "Other-relative": 1506
+    },
+    "race": {
+      "White": 41762,
+      "Black": 4685,
+      "Asian-Pac-Islander": 1519,
+      "Amer-Indian-Eskimo": 470,
+      "Other": 406
+    },
+    "sex": {
+      "Male": 32650,
+      "Female": 16192
+    },
+    "native-country": {
+      "United-States": 43832,
+      "Mexico": 951,
+      "?": 583,
+      "Philippines": 295,
+      "nan": 274,
+      "Germany": 206,
+      "Puerto-Rico": 184,
+      "Canada": 182,
+      "El-Salvador": 155,
+      "India": 151
+    }
+  }
+}
