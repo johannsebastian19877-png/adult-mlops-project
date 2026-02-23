@@ -1,0 +1,61 @@
+stages:
+  ingest:
+    cmd: python -m src.ingest
+    outs:
+      - data/raw/features.parquet
+      - data/raw/targets.parquet
+      - data/raw/features.csv
+      - data/raw/targets.csv
+    desc: Ingesta de datos desde UCI ML Repository
+
+  validate:
+    cmd: python -m src.validate
+    deps:
+      - data/raw/features.parquet
+      - data/raw/features.csv
+    outs:
+      - data/processed/validation_report.json
+    metrics:
+      - data/processed/validation_report.json:
+          cache: false
+    desc: Validación de datos con Pandera
+
+  features:
+    cmd: python -m src.features
+    deps:
+      - data/raw/features.parquet
+      - data/raw/features.csv
+    outs:
+      - artifacts/preprocessor.joblib
+      - artifacts/num.joblib
+      - artifacts/cat.joblib
+      - artifacts/preprocessor_meta.joblib
+    desc: Feature engineering y preprocesamiento
+
+  train:
+    cmd: python -m src.train
+    deps:
+      - artifacts/preprocessor.joblib
+      - data/raw/features.parquet
+      - data/raw/targets.parquet
+    outs:
+      - models/model.pkl
+    metrics:
+      - artifacts/metrics.json:
+          cache: false
+    desc: Entrenamiento del modelo con MLflow tracking
+
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+      - models/model.pkl
+      - artifacts/preprocessor.joblib
+      - data/raw/features.parquet
+      - data/raw/targets.parquet
+    outs:
+      - artifacts/report.html
+      - artifacts/confusion.png
+    metrics:
+      - artifacts/evaluation_metrics.json:
+          cache: false
+    desc: Evaluación del modelo y generación de reporte

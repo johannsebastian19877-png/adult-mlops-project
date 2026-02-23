@@ -16,12 +16,22 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-# Simple schema: extend as needed for your dataset
+# Schema completo para Adult dataset (UCI)
 schema = pa.DataFrameSchema({
-  'age': pa.Column(int, checks=pa.Check.in_range(17, 90)),
-  'workclass': pa.Column(str, nullable=True),
-  'education-num': pa.Column(int, checks=pa.Check.in_range(1, 16)),
-  # add other columns from the Adult dataset here if you want strict validation
+    'age': pa.Column(int, checks=pa.Check.in_range(17, 90)),
+    'workclass': pa.Column(str, nullable=True),
+    'fnlwgt': pa.Column(int, checks=pa.Check.in_range(1, 1500000)),
+    'education': pa.Column(str),
+    'education-num': pa.Column(int, checks=pa.Check.in_range(1, 16)),
+    'marital-status': pa.Column(str),
+    'occupation': pa.Column(str, nullable=True),
+    'relationship': pa.Column(str),
+    'race': pa.Column(str),
+    'sex': pa.Column(str, checks=pa.Check.isin(['Male', 'Female'])),
+    'capital-gain': pa.Column(int, checks=pa.Check.in_range(0, 100000)),
+    'capital-loss': pa.Column(int, checks=pa.Check.in_range(0, 5000)),
+    'hours-per-week': pa.Column(int, checks=pa.Check.in_range(1, 99)),
+    'native-country': pa.Column(str, nullable=True),
 })
 
 

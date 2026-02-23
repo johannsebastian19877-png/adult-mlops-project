@@ -1,0 +1,38 @@
+# DVC ignore patterns
+# Files that should not be tracked by DVC
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+
+# MLflow
+mlruns/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+tests/fixtures/*.pkl
+tests/fixtures/*.joblib

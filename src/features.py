@@ -8,6 +8,25 @@ from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 import joblib
 
 
+# Columnas numéricas y categóricas del dataset Adult
+NUM_COLS = ['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']
+CAT_COLS = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country']
+
+
+def clean_target(y: pd.Series) -> pd.Series:
+    """Limpiar el target: eliminar puntos y espacios extra."""
+    return y.astype(str).str.strip().str.rstrip('.')
+
+
+def clean_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Limpiar features: eliminar puntos y espacios extra en columnas categóricas."""
+    df = df.copy()
+    for col in CAT_COLS:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip().str.rstrip('.')
+    return df
+
+
 def build_preprocessor(num_cols: List[str], cat_cols: List[str]) -> ColumnTransformer:
   """Return an unfitted ColumnTransformer for numerical and categorical columns."""
   num = Pipeline([('scaler', StandardScaler())])
@@ -29,6 +48,9 @@ def fit_and_serialize_preprocessor(
   repo_root = Path(__file__).resolve().parents[1]
   artifacts_path = (repo_root / artifacts_dir).resolve()
   artifacts_path.mkdir(parents=True, exist_ok=True)
+
+  # Limpiar features
+  df = clean_features(df)
 
   # Infer columns if not provided
   if num_cols is None or cat_cols is None:
