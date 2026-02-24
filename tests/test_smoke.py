@@ -7,6 +7,7 @@ puede ejecutarse sin errores con datos mínimos.
 import pytest
 import pandas as pd
 import numpy as np
+import joblib
 from pathlib import Path
 import tempfile
 import os
@@ -166,7 +167,3 @@ class TestPipelineIntegration:
             assert Path(train_result['model_path']).exists()
             assert train_result['metrics']['f1_cv'] > 0
             assert train_result['metrics']['f1_cv'] <= 1
-
-
-# Import necesario para el test de integración
-import joblib

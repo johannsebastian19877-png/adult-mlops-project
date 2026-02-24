@@ -186,9 +186,10 @@ def evaluate(
             raise FileNotFoundError(f"Preprocesador no encontrado en {preprocessor_path}")
     
     # Cargar datos si no se proporcionan
+    X_raw_test = None  # Inicializar para evaluación por subgrupos
     if X_test is None or y_test is None:
         from src.features import handle_missing_values, clean_features, clean_target
-        
+
         # Leer datos raw
         if (paths['data_raw'] / 'features.parquet').exists():
             X_raw = pd.read_parquet(paths['data_raw'] / 'features.parquet', engine='pyarrow')
@@ -200,20 +201,22 @@ def evaluate(
         # Manejar valores faltantes y limpiar datos
         X_raw = handle_missing_values(X_raw)
         X_raw = clean_features(X_raw)
-        
+
         # Aplanar y limpiar target
         if isinstance(y_raw, pd.DataFrame):
             y_raw = y_raw.iloc[:, 0]
         y_raw = clean_target(y_raw)
-        
+
         # Dividir (mismo random_state que en train.py para reproducibilidad)
         from sklearn.model_selection import train_test_split
         X_raw_train, X_raw_test, y_train, y_test = train_test_split(
             X_raw, y_raw, test_size=0.2, random_state=42, stratify=y_raw
         )
-        
+
         # Preprocesar
         X_test = preprocessor.transform(X_raw_test)
+    # Nota: Si X_test y y_test se proporcionan directamente, X_raw_test será None
+    # y la evaluación por subgrupos se omitirá para esas columnas que no existan
     
     # Predicciones
     y_pred = model.predict(X_test)
@@ -250,10 +253,13 @@ def evaluate(
     class_report = classification_report(y_test_bin, y_pred_bin, target_names=['<=50K', '>50K'])
 
     # Evaluación por subgrupos (fairness/robustez)
-    subgroup_metrics = evaluate_subgroups(
-        X_raw_test, y_test_bin, y_pred_bin, y_pred_proba,
-        subgroup_cols=['sex', 'race', 'age']
-    )
+    # Solo se realiza si X_raw_test está disponible (datos cargados desde raw)
+    subgroup_metrics = {}
+    if X_raw_test is not None:
+        subgroup_metrics = evaluate_subgroups(
+            X_raw_test, y_test_bin, y_pred_bin, y_pred_proba,
+            subgroup_cols=['sex', 'race', 'age']
+        )
 
     # Guardar métricas
     metrics = {
