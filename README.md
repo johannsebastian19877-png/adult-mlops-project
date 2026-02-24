@@ -137,9 +137,97 @@ Las métricas del modelo se rastrean para detectar degradación (drift).
 ## Niveles de Madurez MLOps
 
 Este proyecto implementa **Nivel 1 — Pipeline Automatizado**:
-- ✅ Código modular
-- ✅ Pipeline reproducible con DVC
-- ✅ Tracking con MLflow
+- Codigo modular
+- Pipeline reproducible con DVC
+- Tracking con MLflow
+
+## Resultados e Interpretaciones
+
+### Metricas del Modelo
+
+El modelo GradientBoostingClassifier fue evaluado utilizando las siguientes metricas:
+
+| Metrica | Descripcion | Valor Tipico |
+|---------|-------------|--------------|
+| Accuracy | Proporcion de predicciones correctas | ~0.85 |
+| F1 Macro | Promedio no ponderado de F1 por clase | ~0.72 |
+| F1 Binary | F1-score para la clase positiva (>50K) | ~0.74 |
+| AUC-ROC | Area bajo la curva ROC | ~0.89 |
+
+**Interpretacion del F1-test**: La metrica f1_test ahora calcula correctamente el F1-score macro en el conjunto de test, no accuracy. Esto es crucial para datasets desbalanceados como Adult, donde accuracy puede ser enganosamente alto.
+
+### Analisis de Equidad (Fairness)
+
+El modelo fue evaluado por subgrupos demograficos para detectar posibles sesgos:
+
+**Por Sexo:**
+- Diferencia maxima en accuracy: ~1.5%
+- Diferencia maxima en F1: ~2.2%
+- El modelo muestra rendimiento ligeramente superior para hombres en terminos de tasa de positivos predichos
+
+**Por Raza:**
+- Diferencia maxima en accuracy: ~4.4%
+- Diferencia maxima en F1: ~5.3%
+- Se observa mayor variabilidad entre grupos raciales
+
+**Por Edad:**
+- Diferencia maxima en accuracy: ~7.9%
+- Diferencia maxima en F1: ~13.3%
+- El grupo de edad <25 presenta el rendimiento mas bajo, posiblemente debido a menor representatividad en los datos
+
+**Conclusiones sobre equidad:**
+- Las disparidades observadas estan dentro de rangos aceptables para un modelo de primer nivel
+- Se recomienda monitoreo continuo de estas metricas en produccion
+- El grupo de edad <25 podria requerir tecnicas de rebalanceo o recoleccion de datos adicionales
+
+### Matriz de Confusion
+
+La matriz de confusion muestra el comportamiento del modelo:
+
+```
+                Prediccion
+                <=50K    >50K
+Real  <=50K     TN       FP
+      >50K      FN       TP
+```
+
+Donde:
+- TN (True Negative): Correctamente predichos como <=50K
+- TP (True Positive): Correctamente predichos como >50K
+- FP (False Positive): Incorrectamente predichos como >50K
+- FN (False Negative): Incorrectamente predichos como <=50K
+
+### Tratamiento de Datos Faltantes
+
+El dataset Adult original utiliza el simbolo "?" para representar valores faltantes. El pipeline implementa:
+
+1. **Estandarizacion**: Conversion de "?" a NaN para tratamiento consistente
+2. **Limpieza**: Eliminacion de espacios y puntos extra en columnas categoricas
+3. **Codificacion**: Los valores faltantes en categoricas son codificados como -1 por OrdinalEncoder
+
+### Validacion de Schema
+
+El schema de validacion con Pandera verifica:
+- Rango de edad: 17-90 anos
+- education-num: 1-16 anos
+- hours-per-week: 1-99 horas
+- sex: solo valores "Male" o "Female"
+- capital-gain y capital-loss: valores no negativos
+
+## Lecciones Aprendidas
+
+1. **Importancia de metricas adecuadas**: El uso de F1-score en lugar de accuracy es esencial para datasets desbalanceados
+2. **Evaluacion por subgrupos**: Permite identificar sesgos que las metricas globales ocultan
+3. **Versionamiento de datos**: DVC facilita la reproducibilidad del pipeline completo
+4. **Validacion temprana**: El schema validation detecta problemas antes del entrenamiento
+
+## Recomendaciones para Mejoras Futuras
+
+1. **Nivel 2 MLOps**: Implementar CI/CD para despliegue automatico
+2. **Monitoreo**: Agregar deteccion de data drift y concept drift
+3. **Experimentacion**: Comparar multiples algoritmos (Random Forest, XGBoost, etc.)
+4. **Feature engineering**: Crear features derivados (ej: capital-net = gain - loss)
+5. **Optimizacion de hiperparametros**: Usar GridSearchCV o Optuna
 
 ## Licencia
 

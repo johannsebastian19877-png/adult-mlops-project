@@ -18,6 +18,7 @@ import mlflow
 import mlflow.sklearn
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.metrics import f1_score
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -126,10 +127,18 @@ def train(
         
         # Entrenar modelo final
         clf.fit(X_train, y_train)
-        
+
         # Métricas en test set
-        f1_test = clf.score(X_test, y_test)
-        
+        y_pred = clf.predict(X_test)
+        # Convertir target a binario si es necesario para F1
+        if y_test.dtype == object:
+            y_test_bin = (y_test == '>50K').astype(int)
+            y_pred_bin = (y_pred == '>50K').astype(int)
+        else:
+            y_test_bin = y_test
+            y_pred_bin = y_pred
+        f1_test = f1_score(y_test_bin, y_pred_bin, average='macro')
+
         # Loguear parámetros y métricas
         mlflow.log_params(params)
         mlflow.log_metric('f1_cv', scores.mean())
@@ -169,25 +178,26 @@ def train(
 
 if __name__ == '__main__':
     import json as json_module
-    from src.features import clean_features, clean_target
-    
+    from src.features import handle_missing_values, clean_features, clean_target
+
     paths = _resolve_paths()
-    
+
     # Cargar preprocesador
     preprocessor_path = paths['artifacts'] / 'preprocessor.joblib'
     if preprocessor_path.exists():
         preprocessor = joblib.load(preprocessor_path)
-        
+
         # Cargar datos raw
         raw_dir = paths['repo_root'] / 'data' / 'raw'
         if (raw_dir / 'features.parquet').exists():
             X_raw = pd.read_parquet(raw_dir / 'features.parquet', engine='pyarrow')
         else:
             X_raw = pd.read_csv(raw_dir / 'features.csv')
-        
-        # Limpiar features
+
+        # Manejar valores faltantes y limpiar features
+        X_raw = handle_missing_values(X_raw)
         X_raw = clean_features(X_raw)
-        
+
         # Preprocesar
         X = preprocessor.transform(X_raw)
         

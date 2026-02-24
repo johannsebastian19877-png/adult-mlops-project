@@ -6,16 +6,34 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 import joblib
+import numpy as np
 
 
 # Columnas numéricas y categóricas del dataset Adult
 NUM_COLS = ['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']
 CAT_COLS = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country']
 
+# Valores que representan faltantes en el dataset Adult
+MISSING_VALUES = ['?', ' ?']
+
 
 def clean_target(y: pd.Series) -> pd.Series:
     """Limpiar el target: eliminar puntos y espacios extra."""
     return y.astype(str).str.strip().str.rstrip('.')
+
+
+def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Estandarizar tratamiento de valores faltantes.
+    
+    Convierte los valores '?' y ' ?' a None/NaN para un tratamiento consistente.
+    """
+    df = df.copy()
+    for col in df.columns:
+        if df[col].dtype == object:
+            # Reemplazar '?' y variantes con None
+            df[col] = df[col].replace(MISSING_VALUES, np.nan)
+    return df
 
 
 def clean_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -49,7 +67,8 @@ def fit_and_serialize_preprocessor(
   artifacts_path = (repo_root / artifacts_dir).resolve()
   artifacts_path.mkdir(parents=True, exist_ok=True)
 
-  # Limpiar features
+  # Manejar valores faltantes y limpiar features
+  df = handle_missing_values(df)
   df = clean_features(df)
 
   # Infer columns if not provided
@@ -95,6 +114,30 @@ def load_preprocessor(artifacts_dir: str = 'artifacts') -> ColumnTransformer:
   repo_root = Path(__file__).resolve().parents[1]
   preproc_path = (repo_root / artifacts_dir / 'preprocessor.joblib').resolve()
   return joblib.load(preproc_path)
+
+
+def preprocess_data(df: pd.DataFrame, preprocessor=None, artifacts_dir: str = 'artifacts') -> pd.DataFrame:
+  """
+  Preprocesar datos aplicando manejo de faltantes, limpieza y transformación.
+  
+  Args:
+      df: DataFrame con features
+      preprocessor: Preprocesador ya entrenado (opcional)
+      artifacts_dir: Directorio de artefactos
+      
+  Returns:
+      DataFrame preprocesado
+  """
+  if preprocessor is None:
+      preprocessor = load_preprocessor(artifacts_dir)
+  
+  # Manejar valores faltantes y limpiar
+  df = handle_missing_values(df)
+  df = clean_features(df)
+  
+  # Aplicar preprocesador
+  X = preprocessor.transform(df)
+  return X
 
 
 if __name__ == '__main__':

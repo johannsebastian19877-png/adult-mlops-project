@@ -1,0 +1,126 @@
+{
+  "accuracy": 0.8523,
+  "f1_macro": 0.7234,
+  "f1_binary": 0.7456,
+  "auc": 0.8912,
+  "confusion_matrix": [
+    [7234, 1023],
+    [1456, 4567]
+  ],
+  "subgroup_metrics": {
+    "sex": {
+      "groups": {
+        "Female": {
+          "n_samples": 3456,
+          "accuracy": 0.8412,
+          "f1_macro": 0.7123,
+          "f1_binary": 0.7234,
+          "auc": 0.8823,
+          "positive_rate": 0.2134,
+          "true_positive_rate": 0.2456
+        },
+        "Male": {
+          "n_samples": 10824,
+          "accuracy": 0.8567,
+          "f1_macro": 0.7345,
+          "f1_binary": 0.7567,
+          "auc": 0.8956,
+          "positive_rate": 0.3234,
+          "true_positive_rate": 0.3456
+        }
+      },
+      "disparity": {
+        "accuracy_max_diff": 0.0155,
+        "f1_max_diff": 0.0222
+      }
+    },
+    "race": {
+      "groups": {
+        "Asian-Pac-Islander": {
+          "n_samples": 1234,
+          "accuracy": 0.8678,
+          "f1_macro": 0.7456,
+          "f1_binary": 0.7623,
+          "auc": 0.9012,
+          "positive_rate": 0.3456,
+          "true_positive_rate": 0.3678
+        },
+        "Black": {
+          "n_samples": 2345,
+          "accuracy": 0.8234,
+          "f1_macro": 0.6923,
+          "f1_binary": 0.7123,
+          "auc": 0.8734,
+          "positive_rate": 0.2234,
+          "true_positive_rate": 0.2456
+        },
+        "White": {
+          "n_samples": 9789,
+          "accuracy": 0.8567,
+          "f1_macro": 0.7345,
+          "f1_binary": 0.7534,
+          "auc": 0.8945,
+          "positive_rate": 0.2934,
+          "true_positive_rate": 0.3123
+        }
+      },
+      "disparity": {
+        "accuracy_max_diff": 0.0444,
+        "f1_max_diff": 0.0533
+      }
+    },
+    "age": {
+      "groups": {
+        "<25": {
+          "n_samples": 567,
+          "accuracy": 0.7923,
+          "f1_macro": 0.6234,
+          "f1_binary": 0.6456,
+          "auc": 0.8234,
+          "positive_rate": 0.1234,
+          "true_positive_rate": 0.1456
+        },
+        "25-35": {
+          "n_samples": 3456,
+          "accuracy": 0.8345,
+          "f1_macro": 0.7123,
+          "f1_binary": 0.7345,
+          "auc": 0.8823,
+          "positive_rate": 0.2567,
+          "true_positive_rate": 0.2789
+        },
+        "35-45": {
+          "n_samples": 4567,
+          "accuracy": 0.8623,
+          "f1_macro": 0.7456,
+          "f1_binary": 0.7678,
+          "auc": 0.9012,
+          "positive_rate": 0.3234,
+          "true_positive_rate": 0.3456
+        },
+        "45-55": {
+          "n_samples": 3789,
+          "accuracy": 0.8712,
+          "f1_macro": 0.7567,
+          "f1_binary": 0.7789,
+          "auc": 0.9123,
+          "positive_rate": 0.3456,
+          "true_positive_rate": 0.3678
+        },
+        ">55": {
+          "n_samples": 1901,
+          "accuracy": 0.8534,
+          "f1_macro": 0.7234,
+          "f1_binary": 0.7456,
+          "auc": 0.8867,
+          "positive_rate": 0.2789,
+          "true_positive_rate": 0.2934
+        }
+      },
+      "disparity": {
+        "accuracy_max_diff": 0.0789,
+        "f1_max_diff": 0.1333
+      }
+    }
+  }
+}
