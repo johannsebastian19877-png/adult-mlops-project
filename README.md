@@ -1,140 +1,399 @@
 # MLOps - Adult Income Prediction
 
-Proyecto práctico con el dataset Adult (UCI ML Repository)  
-Universidad Santo Tomás — Facultad de Estadística
+> **Proyecto práctico de MLOps con el dataset Adult (UCI ML Repository)**  
+> **Universidad Santo Tomás — Facultad de Estadística**
 
-## Descripción
+[![MLOps Level](https://img.shields.io/badge/MLOps-Level%201-blue)](https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-Predecir si el ingreso anual de una persona supera los $50K USD, usando variables demográficas y laborales del censo de EE.UU. (1994).
+---
 
-### Dataset
+## ⚡ Quick Start (10 minutos)
 
-- **48,842 registros**
-- **14 features**
-- **2 clases** (>50K, ≤50K)
-- **6 numéricas**, **8 categóricas**
-
-## Estructura del Proyecto
-
-```
-adult-mlops-project/
-├── data/
-│   ├── raw/           # Datos crudos (versionados con DVC)
-│   ├── processed/     # Datos procesados
-│   └── interim/       # Datos intermedios
-├── notebooks/         # Exploración y prototipado
-├── src/               # Módulos Python reutilizables
-│   ├── __init__.py
-│   ├── ingest.py      # Ingesta de datos
-│   ├── validate.py    # Validación de datos
-│   ├── features.py    # Feature engineering
-│   ├── train.py       # Entrenamiento
-│   └── evaluate.py    # Evaluación
-├── models/            # Modelos serializados
-├── artifacts/         # Artefactos (transformers, métricas, reportes)
-├── tests/             # Tests automáticos
-├── pyproject.toml     # Configuración del proyecto
-├── Dockerfile         # Contenedor reproducible
-├── dvc.yaml           # Pipeline DVC
-└── README.md
-```
-
-## Instalación
+### Opción A: Local con pip
 
 ```bash
-# Clonar repositorio
+# 1. Clonar y entrar al proyecto
 git clone <repo-url>
 cd adult-mlops-project
 
-# Instalar dependencias
+# 2. Crear entorno virtual
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 3. Instalar dependencias
 pip install -e .
 
-# Configurar DVC
+# 4. Inicializar DVC
 dvc init
-dvc pull
+
+# 5. Ejecutar pipeline completo
+python -m src.pipeline
 ```
 
-## Uso
-
-### Ejecutar pipeline completo
+### Opción B: Docker (recomendado para producción)
 
 ```bash
+# 1. Clonar y entrar al proyecto
+git clone <repo-url>
+cd adult-mlops-project
+
+# 2. Ejecutar con Docker Compose
+docker-compose up --build
+```
+
+**Resultado esperado**: Al finalizar, tendrás en `artifacts/` y `models/`:
+- `models/model.pkl` - Modelo entrenado
+- `artifacts/metrics.json` - Métricas de entrenamiento
+- `artifacts/report.html` - Reporte visual
+- `artifacts/confusion.png` - Matriz de confusión
+
+---
+
+## 📋 Tabla de Contenidos
+
+1. [Descripción del Proyecto](#-descripción-del-proyecto)
+2. [Arquitectura del Pipeline](#-arquitectura-del-pipeline)
+3. [Dataset](#-dataset)
+4. [Estructura del Proyecto](#-estructura-del-proyecto)
+5. [Instalación Detallada](#-instalación-detallada)
+6. [Ejecución del Pipeline](#-ejecución-del-pipeline)
+7. [Docker y Orquestación](#-docker-y-orquestación)
+8. [Artefactos y Trazabilidad](#-artefactos-y-trazabilidad)
+9. [MLflow - Experiment Tracking](#-mlflow---experiment-tracking)
+10. [Validación con Pandera](#-validación-con-pandera)
+11. [DVC - Versionamiento de Datos](#-dvc---versionamiento-de-datos)
+12. [Tests](#-tests)
+13. [Niveles de Madurez MLOps](#-niveles-de-madurez-mlops)
+14. [Stack Tecnológico](#-stack-tecnológico)
+
+---
+
+## 📖 Descripción del Proyecto
+
+### Problema de Negocio
+
+Predecir si el **ingreso anual de una persona supera los $50,000 USD** utilizando variables demográficas y laborales del censo de Estados Unidos (1994).
+
+### Objetivo Técnico
+
+Implementar un **pipeline de MLOps de Nivel 1** que garantice:
+
+| Principio | Implementación |
+|-----------|----------------|
+| **Reproducibilidad** | Mismos resultados con mismos datos y parámetros (seeds fijas, versiones pinneadas) |
+| **Trazabilidad** | Versionamiento conjunto de código (Git), datos y modelos (DVC) |
+| **Automatización** | Pipeline orquestado con DVC, sin intervención manual |
+| **Monitoreo** | Tracking de métricas con MLflow para detectar drift |
+
+### ¿Por qué MLOps?
+
+En producción, el mayor desafío no es entrenar un modelo, sino **mantenerlo confiable** a lo largo del tiempo. Este proyecto aplica principios de DevOps al contexto de Machine Learning para:
+
+- Evitar el *"funciona en mi máquina"*
+- Permitir rollback a versiones anteriores
+- Detectar degradación del modelo (data drift / model drift)
+- Facilitar la colaboración en equipo
+
+---
+
+## 🏗️ Arquitectura del Pipeline
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         PIPELINE MLOps                                      │
+├──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐ │
+│  INGEST  │───▶│ VALIDATE │───▶│ FEATURES │───▶│  TRAIN   │───▶│ EVALUATE │ │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘ │
+     │               │               │               │               │        │
+     ▼               ▼               ▼               ▼               ▼        │
+  features.      validation      preprocessor    model.pkl      report.html   │
+  parquet        _report.json    .joblib                        confusion.png │
+  targets.                                                                    │
+  parquet                                                                    │
+└────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+                          ┌─────────────────┐
+                          │    MLflow       │
+                          │  (Tracking)     │
+                          └─────────────────┘
+```
+
+### Flujo de Datos
+
+1. **Ingesta**: Descarga desde UCI ML Repository → `data/raw/`
+2. **Validación**: Verifica schema con Pandera → `data/processed/validation_report.json`
+3. **Features**: Preprocesamiento (Scaler + Encoder) → `artifacts/preprocessor.joblib`
+4. **Train**: GradientBoosting con CV 5-folds → `models/model.pkl` + MLflow
+5. **Evaluate**: Métricas en test set → `artifacts/report.html`, `confusion.png`
+
+---
+
+## 📊 Dataset
+
+### Adult Income (UCI ML Repository - ID: 2)
+
+| Característica | Valor |
+|----------------|-------|
+| **Registros** | 48,842 |
+| **Features** | 14 |
+| **Clases** | 2 (>50K, ≤50K) |
+| **Numéricas** | 6: age, fnlwgt, education-num, capital-gain, capital-loss, hours-per-week |
+| **Categóricas** | 8: workclass, education, marital-status, occupation, relationship, race, sex, native-country |
+
+### Código de Obtención
+
+```python
+from ucimlrepo import fetch_ucirepo
+
+adult = fetch_ucirepo(id=2)
+X = adult.data.features
+y = adult.data.targets
+```
+
+**Justificación**: Usar una fuente programática (`ucimlrepo`) en lugar de archivos estáticos garantiza que cualquier persona pueda reproducir el experimento sin descargar manualmente.
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+adult-mlops-project/
+│
+├── data/                          # ← DATOS (versionados con DVC)
+│   ├── raw/                       # Datos crudos (inmutables)
+│   │   ├── features.parquet       # Features en formato Parquet
+│   │   ├── targets.parquet        # Targets en formato Parquet
+│   │   ├── features.csv           # Fallback portable
+│   │   └── targets.csv            # Fallback portable
+│   ├── processed/                 # Datos procesados
+│   │   └── validation_report.json # Reporte de validación
+│   └── interim/                   # Datos intermedios (temporales)
+│
+├── notebooks/                     # ← EXPLORACIÓN (no productivo)
+│   ├── 01_eda.ipynb               # Análisis exploratorio
+│   └── 02_modeling.ipynb          # Prototipado de modelos
+│
+├── src/                           # ← CÓDIGO PRODUCTIVO (modular)
+│   ├── __init__.py                # Marca como paquete Python
+│   ├── ingest.py                  # Ingesta desde UCI
+│   ├── validate.py                # Validación con Pandera
+│   ├── features.py                # Feature engineering
+│   ├── train.py                   # Entrenamiento + MLflow
+│   ├── evaluate.py                # Evaluación + reportes
+│   └── pipeline.py                # Orquestación completa
+│
+├── models/                        # ← MODELOS SERIALIZADOS
+│   └── model.pkl                  # Modelo entrenado (joblib)
+│
+├── artifacts/                     # ← ARTEFACTOS DEL PIPELINE
+│   ├── preprocessor.joblib        # Preprocesador completo
+│   ├── num.joblib                 # StandardScaler para numéricas
+│   ├── cat.joblib                 # OrdinalEncoder para categóricas
+│   ├── preprocessor_meta.joblib   # Metadatos de columnas
+│   ├── metrics.json               # Métricas de entrenamiento
+│   ├── evaluation_metrics.json    # Métricas de evaluación
+│   ├── report.html                # Reporte visual HTML
+│   └── confusion.png              # Matriz de confusión
+│
+├── tests/                         # ← TESTS AUTOMÁTICOS
+│   ├── __init__.py
+│   └── test_pipeline.py           # Tests unitarios
+│
+├── mlruns/                        # ← MLFLOW TRACKING
+│
+├── .dvc/                          # ← CONFIGURACIÓN DVC
+│   └── config
+│
+├── scripts/                       # ← SCRIPTS DE UTILIDAD (no productivos)
+│   ├── check_overfitting.py       # Verificar overfitting del modelo
+│   └── verify.py                  # Verificación completa del proyecto
+├── .gitignore                     # Exclusiones para Git
+├── Dockerfile                     # Entorno reproducible
+├── dvc.yaml                       # Definición del pipeline DVC
+├── pyproject.toml                 # Dependencias (versiones fijas)
+└── README.md                      # Este archivo
+```
+
+### Justificación de la Separación
+
+| Directorio | ¿Por qué separado? |
+|------------|-------------------|
+| `data/raw/` | **Inmutabilidad**: Los datos crudos nunca se modifican. Si hay error, se vuelve a ingerir desde la fuente. |
+| `data/processed/` | **Separación de responsabilidades**: Diferenciar entrada vs. salida del pipeline. |
+| `notebooks/` | **Exploración vs. Producción**: Los notebooks son iterativos y no garantizan reproducibilidad. El código productivo va en `src/`. |
+| `src/` | **Modularidad**: Cada módulo tiene una responsabilidad única, puede testearse y mantenerse por separado. |
+| `models/` | **Separación de artefactos**: Los modelos son distintos a transformadores y métricas. |
+| `artifacts/` | **Trazabilidad**: Todos los productos intermedios del pipeline están versionados. |
+
+---
+
+## 🚀 Instalación Detallada
+
+### Requisitos Previos
+
+| Herramienta | Versión | Instalación |
+|-------------|---------|-------------|
+| Python | 3.9+ | [python.org](https://python.org) |
+| Git | 2.0+ | [git-scm.com](https://git-scm.com) |
+| pip | 21.0+ | Incluido con Python |
+| DVC | 3.0+ | `pip install dvc` |
+| Docker (opcional) | 20.0+ | [docker.com](https://docker.com) |
+
+### Paso 1: Clonar el Repositorio
+
+```bash
+git clone <repo-url>
+cd adult-mlops-project
+```
+
+### Paso 2: Crear Entorno Virtual
+
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Linux/Mac
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**Justificación**: Los entornos virtuales aíslan las dependencias del proyecto, evitando conflictos con otras instalaciones de Python.
+
+### Paso 3: Instalar Dependencias
+
+```bash
+pip install -e .
+```
+
+Las dependencias están **fijadas por versión exacta** en `pyproject.toml` para garantizar reproducibilidad:
+
+| Dependencia | Versión | Propósito |
+|-------------|---------|-----------|
+| `pandas` | 2.1.4 | Manipulación de DataFrames |
+| `numpy` | 1.26.3 | Cálculo numérico |
+| `scikit-learn` | 1.3.2 | Machine Learning |
+| `joblib` | 1.3.2 | Serialización eficiente |
+| `pyarrow` | 14.0.2 | Formato Parquet |
+| `pandera` | 0.17.2 | Validación de schemas |
+| `mlflow` | 2.9.2 | Tracking de experimentos |
+| `ucimlrepo` | 0.0.7 | Acceso al dataset UCI |
+| `matplotlib` | 3.8.2 | Visualización |
+| `seaborn` | 0.13.0 | Visualización estadística |
+
+### Paso 4: Inicializar DVC
+
+```bash
+dvc init
+```
+
+**Justificación**: DVC configura el cache para versionar datos y modelos grandes fuera de Git.
+
+---
+
+## ⚙️ Ejecución del Pipeline
+
+### Pipeline Completo
+
+```bash
+# Opción 1: Módulo Python (desarrollo)
+python -m src.pipeline
+
+# Opción 2: DVC (producción - con caching)
 dvc repro
 ```
 
-### Ejecutar etapas individuales
+**Diferencia**:
+- `python -m src.pipeline`: Ejecuta todo en secuencia, útil para depuración
+- `dvc repro`: Solo re-ejecuta etapas con cambios, ideal para producción
+
+### Etapas Individuales
 
 ```bash
-# Ingesta
+# 1. Ingesta
 python -m src.ingest
 
-# Validación
+# 2. Validación
 python -m src.validate
 
-# Feature engineering
+# 3. Feature Engineering
 python -m src.features
 
-# Entrenamiento
+# 4. Entrenamiento
 python -m src.train
 
-# Evaluación
+# 5. Evaluación
 python -m src.evaluate
 ```
 
-### Construir contenedor Docker
+**Justificación**: Ejecutar etapas individualmente permite:
+- Depurar problemas específicos
+- Re-ejecutar solo una parte del pipeline
+- Desarrollar y testear cada componente por separado
+
+### Verificación
 
 ```bash
-docker build -t adult-mlops .
-docker run adult-mlops
+# Verificar overfitting
+python scripts/check_overfitting.py
+
+# Verificación completa
+python scripts/verify.py
 ```
 
-## Artefactos
+---
 
-Cada etapa del pipeline genera artefactos versionados:
+## 🐳 Docker y Orquestación
 
-| Etapa | Artefactos |
-|-------|-----------|
-| Ingesta | `features.parquet`, `targets.parquet` |
-| Validación | `validation_report.json` |
-| Features | `preprocessor.joblib`, `num.joblib`, `cat.joblib` |
-| Train | `model.pkl`, `metrics.json` |
-| Evaluate | `report.html`, `confusion.png` |
+### ¿Por qué Docker?
 
-## Stack Tecnológico
+| Problema sin Docker | Solución con Docker |
+|---------------------|---------------------|
+| "Funciona en mi máquina" | Mismo SO, Python y dependencias |
+| Conflictos de versiones | Entorno aislado y consistente |
+| Configuración manual | Todo automatizado en el Dockerfile |
 
-**Datos**
-- ucimlrepo, pandas, pandera, Parquet
+### Construir Imagen
 
-**Features**
-- scikit-learn, Pipeline, ColumnTransformer, joblib
+```bash
+docker build -t adult-mlops:latest .
+```
 
-**Entrenamiento**
-- scikit-learn, MLflow
+### Ejecutar con Docker Compose
 
-**Versionamiento**
-- Git, DVC
+```bash
+# Iniciar todos los servicios
+docker-compose up --build
 
-**Reproducibilidad**
-- Docker, Poetry
+# Solo pipeline
+docker-compose up pipeline
 
-**Testing**
-- pytest, pandera
+# Pipeline + MLflow UI
+docker-compose --profile main --profile tracking up
 
-## Principios MLOps
+# Entorno de desarrollo (con Jupyter)
+docker-compose --profile dev up
 
-### Reproducibilidad
-Cada ejecución del pipeline genera los mismos resultados con los mismos datos y parámetros.
+# Ejecutar una vez y salir
+docker-compose run pipeline
 
-### Versionamiento
-Datos, código y modelos se versionan juntos para trazabilidad completa.
+# Detener servicios
+docker-compose down
+```
 
-### Automatización
-Pipelines orquestados reducen intervención manual y errores humanos.
+### Servicios Disponibles
 
-### Monitoreo Continuo
-Las métricas del modelo se rastrean para detectar degradación (drift).
+| Servicio | Puerto | Propósito |
+|----------|--------|-----------|
+| `pipeline` | - | Ejecuta el pipeline completo |
+| `mlflow` | 5000 | UI de tracking de experimentos |
+| `jupyter` | 8888 | Notebook server para exploración |
+| `dvc-repro` | - | Ejecución con DVC para CI/CD |
 
-## Niveles de Madurez MLOps
+### Acceder a MLflow UI
 
 Este proyecto implementa **Nivel 1 — Pipeline Automatizado**:
 - Codigo modular
@@ -418,6 +677,237 @@ Si quieres llevarlo a verdadero MLOps productivo, dos prioridades claras:
 - Dashboards
 - Alertas drift/performance
 
-## Licencia
+### Acceder a Jupyter
 
-MIT
+```
+http://localhost:8888
+Token: adult-mlops
+```
+
+---
+
+## 📦 Artefactos y Trazabilidad
+
+### Tipos de Artefactos
+
+| Etapa | Artefacto | Formato | Propósito |
+|-------|-----------|---------|-----------|
+| **Ingesta** | `features.parquet` | Parquet | Features versionados |
+| | `targets.parquet` | Parquet | Targets versionados |
+| **Validación** | `validation_report.json` | JSON | Reporte de validación |
+| **Features** | `preprocessor.joblib` | joblib | Preprocesador completo |
+| | `num.joblib` | joblib | Scaler para numéricas |
+| | `cat.joblib` | joblib | Encoder para categóricas |
+| **Train** | `model.pkl` | pickle | Modelo entrenado |
+| | `metrics.json` | JSON | Métricas de entrenamiento |
+| **Evaluate** | `report.html` | HTML | Reporte visual |
+| | `confusion.png` | PNG | Matriz de confusión |
+| | `evaluation_metrics.json` | JSON | Métricas de evaluación |
+
+### ¿Por qué Parquet?
+
+- **Compresión eficiente**: Archivos más pequeños que CSV
+- **Lectura rápida**: Lee solo las columnas necesarias
+- **Tipado fuerte**: Mantiene tipos de datos
+
+### ¿Por qué joblib?
+
+- **Más eficiente** con arrays numpy que pickle
+- **Compresión integrada**
+- **Recomendado oficialmente** por scikit-learn
+
+---
+
+## 📈 MLflow - Experiment Tracking
+
+### ¿Qué se Registra?
+
+```python
+import mlflow
+
+with mlflow.start_run():
+    mlflow.log_params(params)           # Hiperparámetros
+    mlflow.log_metric('f1_cv', score)   # Métricas
+    mlflow.sklearn.log_model(clf, 'model')  # Modelo
+```
+
+### Ejecutar MLflow Server
+
+```bash
+# Localmente
+mlflow server --host 0.0.0.0 --port 5000
+
+# Con Docker Compose
+docker-compose up mlflow
+```
+
+### Acceder a la UI
+
+```
+http://localhost:5000
+```
+
+### Beneficios
+
+| Beneficio | Explicación |
+|-----------|-------------|
+| **Reproducibilidad** | Cada run registra código, parámetros y datos exactos |
+| **Comparación** | Visualizar múltiples experimentos lado a lado |
+| **Auditoría** | Trazabilidad completa de cómo se obtuvo cada modelo |
+
+---
+
+## ✅ Validación con Pandera
+
+### Schema Implementado
+
+```python
+import pandera.pandas as pa
+
+schema = pa.DataFrameSchema({
+    'age': pa.Column(int, checks=pa.Check.in_range(17, 90)),
+    'workclass': pa.Column(str, nullable=True),
+    'fnlwgt': pa.Column(int, checks=pa.Check.in_range(1, 1500000)),
+    'education-num': pa.Column(int, checks=pa.Check.in_range(1, 16)),
+    'sex': pa.Column(str, checks=pa.Check.isin(['Male', 'Female'])),
+    # ... más columnas
+})
+```
+
+### Validaciones
+
+| Tipo | Descripción |
+|------|-------------|
+| **Tipos de datos** | Verifica que cada columna tenga el tipo correcto |
+| **Rangos** | Valida que valores numéricos estén dentro de rangos |
+| **Categorías** | Verifica que valores pertenezcan a un conjunto válido |
+| **Nulos** | Controla qué columnas pueden tener valores nulos |
+
+### Justificación
+
+Validar datos **antes** de entrenar previene:
+- **Errores silenciosos**: Datos corruptos que producen modelos incorrectos
+- **Data drift**: Cambios en la distribución de datos de entrada
+
+---
+
+## 🔄 DVC - Versionamiento de Datos
+
+### Git vs DVC
+
+| Característica | Git | DVC |
+|----------------|-----|-----|
+| **Archivos pequeños** | ✅ Sí | ❌ No diseñado |
+| **Archivos grandes** | ❌ No eficiente | ✅ Sí (usa hashes) |
+| **Código** | ✅ Sí | ❌ No |
+| **Datos/Modelos** | ❌ No | ✅ Sí |
+
+### Pipeline DVC (dvc.yaml)
+
+```yaml
+stages:
+  ingest:
+    cmd: python -m src.ingest
+    outs:
+      - data/raw/features.parquet
+      
+  validate:
+    cmd: python -m src.validate
+    deps:
+      - data/raw/features.parquet
+    metrics:
+      - data/processed/validation_report.json:
+          cache: false
+      
+  train:
+    cmd: python -m src.train
+    deps:
+      - artifacts/preprocessor.joblib
+      - data/raw/targets.parquet
+    outs:
+      - models/model.pkl
+```
+
+### Comandos Útiles
+
+```bash
+# Inicializar
+dvc init
+
+# Ejecutar pipeline
+dvc repro
+
+# Ver estado
+dvc status
+
+# Mostrar DAG
+dvc dag
+```
+
+---
+
+## 🧪 Tests
+
+### Ejecutar Tests
+
+```bash
+pytest tests/ -v
+```
+
+### Tests Incluidos
+
+| Test | Propósito |
+|------|-----------|
+| `test_ingest_returns_dict` | Verifica estructura de ingesta |
+| `test_validate_returns_dict` | Verifica estructura de validación |
+| `test_build_preprocessor_returns_transformer` | Verifica tipo de preprocesador |
+| `test_age_range` | Verifica validación de rango de edad |
+| `test_age_out_of_range` | Verifica que datos inválidos fallen |
+
+### Justificación
+
+Los tests en MLOps previenen:
+- **Regresiones**: Cambios que rompen funcionalidad existente
+- **Errores de datos**: Aseguran que los datos cumplen el schema
+
+---
+
+## 📊 Niveles de Madurez MLOps
+
+| Nivel | Características | Este Proyecto |
+|-------|-----------------|---------------|
+| **Nivel 0** — Manual | Todo en notebooks, sin versionamiento | ❌ |
+| **Nivel 1** — Pipeline Automatizado | Código modular, DVC, MLflow | ✅ **Implementado** |
+| **Nivel 2** — CI/CD para ML | Reentrenamiento automático, deploy automatizado | ⏳ Pendiente |
+
+---
+
+## 🛠️ Stack Tecnológico
+
+| Categoría | Herramientas |
+|-----------|--------------|
+| **Datos** | ucimlrepo, pandas, pandera, pyarrow |
+| **Features** | scikit-learn, ColumnTransformer, StandardScaler, OrdinalEncoder, joblib |
+| **Entrenamiento** | GradientBoostingClassifier, cross_val_score, MLflow |
+| **Versionamiento** | Git, DVC |
+| **Reproducibilidad** | Docker, docker-compose |
+| **Testing** | pytest, pandera |
+
+---
+
+## 📚 Referencias
+
+- [UCI Adult Dataset](https://archive.ics.uci.edu/ml/datasets/adult)
+- [DVC Documentation](https://dvc.org/doc)
+- [MLflow Documentation](https://www.mlflow.org/docs)
+- [Google MLOps Guide](https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
+
+---
+
+## 📄 Licencia
+
+MIT License - Universidad Santo Tomás, Facultad de Estadística
+
+---
+
+> **Nota**: MLOps no es solo un conjunto de herramientas, es una **disciplina de ingeniería** para hacer Machine Learning sostenible en producción.

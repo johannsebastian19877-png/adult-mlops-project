@@ -1,0 +1,55 @@
+# Docker ignore patterns
+# Optimiza el build de Docker excluyendo archivos innecesarios
+
+# Git
+.git
+.gitignore
+
+# DVC
+.dvc
+.dvcignore
+dvc.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# Virtual environments (no necesarias en contenedor)
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter checkpoints
+.ipynb_checkpoints
+
+# MLflow (se genera dentro del contenedor)
+mlruns/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Documentation
+*.md
+!pyproject.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

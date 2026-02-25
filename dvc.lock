@@ -1,0 +1,99 @@
+schema: '2.0'
+
+stages:
+  ingest:
+    cmd: python -m src.ingest
+    outs:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.parquet
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/targets.parquet
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.csv
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/targets.csv
+  validate:
+    cmd: python -m src.validate
+    deps:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.parquet
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.csv
+    outs:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/processed/validation_report.json
+  features:
+    cmd: python -m src.features
+    deps:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.parquet
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.csv
+    outs:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/preprocessor.joblib
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/num.joblib
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/cat.joblib
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/preprocessor_meta.joblib
+  train:
+    cmd: python -m src.train
+    deps:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/preprocessor.joblib
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.parquet
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/targets.parquet
+    outs:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: models/model.pkl
+    metrics:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/metrics.json
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: models/model.pkl
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/preprocessor.joblib
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/features.parquet
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: data/raw/targets.parquet
+    outs:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/report.html
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/confusion.png
+    metrics:
+      - md5: 00000000000000000000000000000000
+        size: 0
+        path: artifacts/evaluation_metrics.json

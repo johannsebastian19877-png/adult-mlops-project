@@ -1,4 +1,8 @@
 # Git ignore patterns
+# =============================================================================
+# Este archivo define qué archivos/directorios NO se suben a Git
+# Los datos, modelos y artifacts grandes se versionan con DVC, no con Git
+# =============================================================================
 
 # Python
 __pycache__/

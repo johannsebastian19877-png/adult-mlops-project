@@ -1,0 +1,6 @@
+[core]
+    autostage = true
+    analytics = false
+[cache]
+    type = symlink
+    shared = group

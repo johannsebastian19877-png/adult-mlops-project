@@ -1,0 +1,178 @@
+# Docker Compose para MLOps - Adult Income Prediction
+# 
+# Este archivo define los servicios necesarios para ejecutar el pipeline completo
+# de MLOps en un entorno contenerizado y reproducible.
+#
+# Servicios incluidos:
+#   - pipeline: Ejecuta el pipeline completo de MLOps
+#   - mlflow: Servidor de tracking de experimentos (UI web)
+#   - jupyter: Notebook server para exploración interactiva
+#
+# Uso:
+#   docker-compose up --build          # Iniciar todos los servicios
+#   docker-compose up pipeline         # Solo ejecutar el pipeline
+#   docker-compose up mlflow           # Solo MLflow UI
+#   docker-compose run pipeline        # Ejecutar una vez y salir
+#   docker-compose down                # Detener servicios
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # SERVICIO PRINCIPAL: Pipeline MLOps
+  # ===========================================================================
+  # Propósito: Ejecutar todas las etapas del pipeline (ingesta, validación,
+  #            feature engineering, entrenamiento, evaluación)
+  # Justificación: Contenerizar el pipeline garantiza que se ejecute en el
+  #                mismo entorno sin importar la máquina donde se despliegue
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adult-mlops:latest
+    container_name: adult-mlops-pipeline
+    environment:
+      # MLflow tracking URI - apunta al servicio mlflow interno
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_EXPERIMENT_NAME=adult-income
+      # Variables para reproducibilidad
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      # Montar directorios para persistir artefactos fuera del contenedor
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./artifacts:/app/artifacts
+      - ./mlruns:/app/mlruns
+      # Montar código para desarrollo (hot reload)
+      - ./src:/app/src
+      - ./dvc.yaml:/app/dvc.yaml
+    depends_on:
+      - mlflow
+    networks:
+      - mlops-network
+    # Perfil para ejecutar solo cuando se necesita
+    profiles:
+      - main
+
+  # ===========================================================================
+  # SERVICIO: MLflow Tracking Server
+  # ===========================================================================
+  # Propósito: Servir la UI de MLflow para visualizar experimentos, métricas
+  #            y modelos registrados
+  # Justificación: Centralizar el tracking de experimentos permite comparar
+  #                diferentes ejecuciones, hacer tuning de hiperparámetros
+  #                y auditar el proceso de entrenamiento
+  mlflow:
+    image: python:3.11-slim
+    container_name: adult-mlflow-server
+    working_dir: /app
+    environment:
+      - MLFLOW_HOST=0.0.0.0
+      - MLFLOW_PORT=5000
+      - BACKEND_URI=sqlite:///mlruns.db
+      - DEFAULT_ARTIFACT_ROOT=./mlruns
+    volumes:
+      # Persistir datos de MLflow
+      - ./mlruns:/app/mlruns
+    ports:
+      # Exponer UI en puerto 5000 (accesible desde localhost:5000)
+      - "5000:5000"
+    command: >
+      bash -c "pip install mlflow>=2.8.0 &&
+               mlflow server 
+               --host 0.0.0.0 
+               --port 5000 
+               --backend-store-uri sqlite:///mlruns.db 
+               --default-artifact-root /app/mlruns"
+    networks:
+      - mlops-network
+    profiles:
+      - tracking
+
+  # ===========================================================================
+  # SERVICIO: Jupyter Notebook Server
+  # ===========================================================================
+  # Propósito: Proporcionar entorno interactivo para exploración de datos,
+  #            análisis exploratorio (EDA) y prototipado
+  # Justificación: Los notebooks permiten análisis iterativo y visualización
+  #                interactiva, esencial para la fase de exploración del
+  #                ciclo de vida MLOps
+  jupyter:
+    image: python:3.11-slim
+    container_name: adult-jupyter
+    working_dir: /app
+    environment:
+      - JUPYTER_TOKEN=adult-mlops
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Montar notebooks y datos para análisis
+      - ./notebooks:/app/notebooks
+      - ./data:/app/data
+      - ./artifacts:/app/artifacts
+    ports:
+      # Exponer Jupyter en puerto 8888
+      - "8888:8888"
+    command: >
+      bash -c "pip install jupyterlab pandas scikit-learn matplotlib seaborn 
+               pyarrow pandera mlflow ucimlrepo &&
+               jupyter lab --ip=0.0.0.0 --port=8888 --no-browser 
+               --allow-root --NotebookApp.token=\$\{JUPYTER_TOKEN\}"
+    networks:
+      - mlops-network
+    profiles:
+      - dev
+
+  # ===========================================================================
+  # SERVICIO: DVC Repro (opcional para CI/CD)
+  # ===========================================================================
+  # Propósito: Ejecutar pipeline completo con DVC para reproducibilidad
+  # Justificación: DVC asegura que cada etapa del pipeline sea reproducible
+  #                y traza los artefactos generados con su hash
+  dvc-repro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adult-mlops:latest
+    container_name: adult-dvc-repro
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_EXPERIMENT_NAME=adult-income
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./artifacts:/app/artifacts
+      - ./mlruns:/app/mlruns
+      - ./.dvc:/app/.dvc
+      - ./dvc.yaml:/app/dvc.yaml
+      - ./dvc.lock:/app/dvc.lock
+    depends_on:
+      - mlflow
+    networks:
+      - mlops-network
+    command: dvc repro --force
+    profiles:
+      - cicd
+
+# ===========================================================================
+# REDES
+# ===========================================================================
+# Propósito: Aislar la comunicación entre servicios
+# Justificación: Los servicios solo se comunican entre sí, no están expuestos
+#                a la red externa (excepto puertos mapeados explícitamente)
+networks:
+  mlops-network:
+    driver: bridge
+    name: adult-mlops-network
+
+# ===========================================================================
+# VOLÚMENES (opcional, para persistencia named volumes)
+# ===========================================================================
+# Propósito: Persistir datos entre ejecuciones de contenedores
+# Justificación: Los artefactos y modelos no se pierden al detener contenedores
+volumes:
+  mlruns-data:
+    driver: local
+  dvc-cache:
+    driver: local
