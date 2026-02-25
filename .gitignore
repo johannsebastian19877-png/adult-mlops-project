@@ -46,16 +46,20 @@ ENV/
 .ipynb_checkpoints
 
 # MLOps artifacts (large files tracked by DVC)
+# Datos grandes - usar DVC
 data/raw/*.parquet
 data/raw/*.csv
 data/processed/*.parquet
-data/processed/*.json
 data/interim/
-artifacts/*.joblib
+
+# Artifacts pequeños - permitir en Git para trazabilidad
+# artifacts/*.joblib        # Permitidos (transformadores)
+# artifacts/*.json          # Permitidos (métricas)
+# artifacts/*.html          # Permitidos (reportes)
+# artifacts/*.png           # Permitidos (visualizaciones)
+
+# Solo ignorar artifacts muy grandes
 artifacts/*.pkl
-artifacts/*.json
-artifacts/*.html
-artifacts/*.png
 models/*.pkl
 models/*.joblib
 models/*.onnx

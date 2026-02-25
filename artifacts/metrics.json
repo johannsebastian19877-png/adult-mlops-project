@@ -1,0 +1,11 @@
+{
+  "f1_cv": 0.8130969409581397,
+  "f1_cv_std": 0.004958364962895538,
+  "f1_test": 0.8171612333095706,
+  "params": {
+    "n_estimators": 100,
+    "learning_rate": 0.1,
+    "max_depth": 5,
+    "random_state": 42
+  }
+}
